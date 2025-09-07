@@ -1,82 +1,120 @@
 //classes
-class graph {
-    #matrix;
-    #clicked;
-    constructor() {
-        this.#matrix = [];
-        for (let i = 0; i < 10; i++) {
-            this.#matrix[i] = new Array(10).fill(0);
-        }
-        this.#clicked=0;
-    }
-
-    linechecker(i,j,pi,pj,direction){
-        //right
-       if((direction===0&&i===pi&&j-pj===1)||(direction===-1)){
-        return true;
-       }
-       //down
-       else if ((direction===1&&i-pi===1&&j===pj)||(direction===-1)){
-        return true;
-       }
-       //left
-       else if((direction===2&&i===pi&&j-pj===-1)||(direction===-1)){
-        return true;
-       }
-       //up
-       else if ((direction===3&&i-pi===-1&&j===pj)||(direction===-1)){
-        return true;
-       }
-       return false;
-    } 
-
-    finddirection(i,j,pi,pj){
-        //right
-        if(i===pi&&j-pj===1){
-            return 0;
-        }
-        //down
-        else if (i-pi===1&&j===pj){
-         return 1;
-        }
-        //left
-        else if(i===pi&&j-pj===-1){
-         return 2;
-        }
-       //up
-        else if (i-pi===-1&&j===pj){
-         return 3;
-        }
-    } 
-}
-
 class ship{
-    #hitpoints;
+    hitpoints;
     #name;
+    #alive;
+    startrow;
+    endrow;
+    startcolumn;
+    endcolumn;
 
     constructor(string="default name",hp=2){
         this.#name=string;
-        this.#hitpoints=hp;
+        this.hitpoints=hp;
+        this.#alive=true;
+        this.startrow = -1;
+        this.endrow = -1;
+        this.startcolumn = -1;
+        this.endcolumn = -1;
     }
 
     hit(){
-        if(this.#hitpoints>0){
-           this.#hitpoints--;
+        if(this.hitpoints>0){
+           this.hitpoints--;
         }
     }
 
     isdestroyed(){
-        if(this.#hitpoints==0){
+        if(this.hitpoints===0){
+            //this.#alive=false;
             return true;
         }
         else{
+            //this.#alive=true;
             return false;
         }
     }
+
+    fieldoffire(row,column){
+        if(this.startrow===-1||this.startcolumn===-1||this.endrow===-1||this.endcolumn===-1){
+            return false;
+        }
+        if(this.startrow===this.endrow && row===this.startrow && (((this.startcolumn<=column)&&(column<=this.endcolumn))||((this.startcolumn>=column)&&(column>=this.endcolumn)))){
+            return true;
+        }
+        else if(this.startcolumn===this.endcolumn && column===this.startcolumn && (((this.startrow<=row)&&(row<=this.endrow))||((this.startrow>=row)&&(row>=this.endrow)))){
+            return true;
+        }
+        return false;
+    }
 }
 
+class graph {
+    matrix;
+    ships;
+    //#clicked;
+    constructor() {
+        this.matrix = [];
+        for (let i = 0; i < 10; i++) {
+            this.matrix[i] = new Array(10).fill(0);
+        }
+        this.ships = [];
+        this.ships[0] = new ship("Aircraft Carrier" , 5)
+        this.ships[1] = new ship("Battle Ship" , 4)
+        this.ships[2] = new ship("Cruiser" , 3)
+        this.ships[3] = new ship("Submarine" , 3)
+        this.ships[4] = new ship("Destroyer" , 2)
+
+        //this.#clicked=0;
+    }
+
+    lost(){
+        this.ships.forEach(shoop=>{
+            if(!shoop.isdestroyed()){
+                return false;
+            }
+        })
+        return true;
+    }
+
+    checkships(){
+        this.ships.forEach(shoop=>{
+            if(!shoop.isdestroyed()){
+                return false;
+            }
+        })
+    }
+
+    checkhit(str){
+        let index = parseInt(str);
+        let row = parseInt(index/10);
+        let column = index%10;
+    }
+
+}
+
+class friendlygraph extends graph{
+
+    constructor(){
+        super();
+    }
+
+    markship(str,str2,shipnumber){
+        let index = parseInt(str);
+        let index2 = parseInt(str2);
+        let row = parseInt(index/10);
+        let column = index%10;
+        let row2 = parseInt(index2/10);
+        let column2 = index2%10;
+
+        this.ships[shipnumber].startrow = row;
+        this.ships[shipnumber].endrow = row2;
+        this.ships[shipnumber].startcolumn = column;
+        this.ships[shipnumber].endcolumn = column2;
 
 
+    }
+}
 
 
 //setting audio
@@ -111,51 +149,151 @@ let interval1 = setInterval(() => {
 
 //adding selection animation for ships
 let shipchoice =-1;
+let shipdiv;
+let boxesclicked=0;
 const shipschildren = shipcolumn.querySelectorAll(":scope > .ships");
+
+
 const shipslide = (event)=>{
+    //so if already choosing for a ship dont choose others
+    if(boxesclicked>0){
+        return;
+    }
     //removing other toggled ships
     shipschildren.forEach(node=>{
         node.classList.remove("selected");
     })
     //toggling this one
     event.currentTarget.classList.toggle("selected");
-    //telling us which is toggled
-    shipchoice = event.currentTarget.id;
+    shipdiv = event.currentTarget;
+
+    //telling us which ship is toggled
+    if(event.currentTarget.id==="carrier"){
+        shipchoice = 0;
+    }
+    else if (event.currentTarget.id === "battleship") {
+        shipchoice = 1;
+    }
+    else if (event.currentTarget.id === "cruiser") {
+        shipchoice = 2;
+    }
+    else if (event.currentTarget.id === "submarine") {
+        shipchoice = 3;
+    }
+    else if (event.currentTarget.id === "destroyer") {
+        shipchoice = 4;
+    }
 }
+
 shipschildren.forEach(node=>{
     node.addEventListener("click",shipslide);
 })
-// detecting mouse clicks
 
-// let clicked=false
-// const downer = (event)=>{
-//     if(event.button===0){
-//         clicked=true;
-//         console.log("down");
-//     }
-// }
+//adding newer divs and adding clicking property to select ships
 
-// const upper = (event)=>{
-//     if(event.button===0){
-//         clicked = false;
-//         console.log("up");
-//     }
-// }
+//the ship can only be straight so direction checker
+function directionsatisfier(str,clicked,str2=-1){
+    let index = parseInt(str);
+    let row = parseInt(index/10);
+    let column = index%10;
 
-// document.addEventListener("mousedown",downer);
-// document.addEventListener("mouseup",upper);
+    let index2 = parseInt(clicked);
+    let clickedrow = parseInt(index2/10);
+    let clickedcolumn = index2%10;
+
+    console.log("column : " + column + " clickedcolumn : " + clickedcolumn + " row : " + row + " clickedrow : " + clickedrow);
+
+    if(str2===-1&&((row===clickedrow&&(Math.abs(column-clickedcolumn)===1))||(column===clickedcolumn&&(Math.abs(row-clickedrow)===1)))){
+       return true;
+    }
+
+    let index3 = parseInt(str2);
+    let secondrow = parseInt(index3/10);
+    let secondcolumn = index3%10;
+
+    console.log("secondcolumn : " + secondcolumn + " secondrow : " + secondrow);
+
+
+    if(str2!==-1&&(row === secondrow && secondrow === clickedrow && (Math.abs(secondcolumn-clickedcolumn)===1))){
+         console.log("HAPPENS");
+        return true;
+    }
+
+    if(str2!==-1&&(column === secondcolumn && secondcolumn === clickedcolumn && (Math.abs(secondrow-clickedrow)===1))){
+         console.log("HAPPENS");
+        return true;
+    }
+
+    return false;
+}
 
 
 
-//adding newer divs and adding hover property
+//event handler for clicking grid boxes during selection basically all the deployment logic required
 const allboxes = grid.querySelectorAll("scope > .box");
-const obj=new graph();
-let boxesclicked=0;
+const mysidegraph=new friendlygraph();
+let startingdiv;
+let secondarydiv;
 let direction=-1;
 const boxhover = (event) => {
-    if (count > 1) {
+    let index = parseInt(event.target.id);
+    let row = parseInt(index/10);
+    let column = index%10;
+
+    //if another ship has already selected the place quit the entire function
+    let useddiv = false;
+    mysidegraph.ships.forEach(singleship=>{
+        if(singleship.fieldoffire(row,column)){
+            useddiv=true;
+        }
+    });
+
+    if(useddiv){
+        return;
+    }
+
+    if (count > 1 && shipchoice!==-1) {
+
+        //CHECK TO SEE DIRECTION VALID
+        if(boxesclicked===1&&!(directionsatisfier(startingdiv,event.target.id))){
+            return;
+        }
+
+        if(boxesclicked>1&&!(directionsatisfier(startingdiv,event.target.id,secondarydiv))){
+            console.log("wtf why");
+            return;
+        }
+
+        secondarydiv=event.target.id;
+
+
+
+
         event.target.classList.toggle("selected");
-        boxesclicked++;
+        if(boxesclicked===0){
+            startingdiv=event.target.id;
+        }
+
+
+
+
+        if(event.target.classList.contains("selected")){
+            boxesclicked++;
+        }
+        else{
+            boxesclicked--;
+        }
+
+        if(boxesclicked===mysidegraph.ships[shipchoice].hitpoints){
+            mysidegraph.markship(startingdiv,event.target.id,shipchoice);
+            boxesclicked=0;
+            //shipchoice=-1; insert after test
+            shipdiv.classList.remove("selected");
+            shipdiv.classList.toggle("remove");
+            shipchoice=-1;
+
+        }
+        //friendlygraph.markship(event.target.id);
     }
 };
 
