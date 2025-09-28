@@ -92,6 +92,10 @@ class friendlygraph extends graph {
         super();
     }
 
+    alldeployed() {
+        return this.ships.every(ship => ship.startrow !== -1);
+    }
+
     markship(str, str2, shipnumber) {
         let index = parseInt(str);
         let index2 = parseInt(str2);
@@ -104,8 +108,6 @@ class friendlygraph extends graph {
         this.ships[shipnumber].endrow = row2;
         this.ships[shipnumber].startcolumn = column;
         this.ships[shipnumber].endcolumn = column2;
-
-
     }
 }
 
@@ -138,13 +140,25 @@ function directionsatisfier(str, clicked, str2 = -1) {
     return false;
 }
 
-//getting elements from dom and declaring classes
+//getting elements from dom and declaring classes and making callback function variables
+const screen = document.querySelector("body")
 const text = document.querySelector(".ttext");
+const phaseenclosure = document.querySelector(".phase");
+const phasetype = document.querySelector(".t");
+const slidingback = document.querySelector(".back");
 const grid = document.querySelector(".grid");
 const set = document.querySelector(".set");
 const timer = document.querySelector(".timer");
 const shipcolumn = document.querySelector(".shipbut");
 const shipschildren = shipcolumn.querySelectorAll(":scope > .ships");
+let allboxes;
+let parda;
+
+let boxhover;
+let shipslide;
+let resetship;
+let interval1;
+let grid2;
 
 const mysidegraph = new friendlygraph();
 
@@ -160,11 +174,16 @@ function startdeployementphase() {
     audio1.play();
     console.log("test");
 
+    phasetype.classList.toggle("appear");
+    screen.classList.toggle("appear");
+    slidingback.classList.toggle("deploymentslider");
+    
+
 
 
 
     let count = 0;
-    let interval1 = setInterval(() => {
+    interval1 = setInterval(() => {
         count++;
         if (count === 1) {
             set.style.display = "flex";
@@ -175,7 +194,8 @@ function startdeployementphase() {
             text.textContent = string;
         }
         else if (count === 62) {
-            clearInterval(interval1);
+            //clearInterval(interval1);
+            intermediaryphase();
         }
     }, 1000);
 
@@ -185,7 +205,7 @@ function startdeployementphase() {
     let boxesclicked = 0;
 
 
-    const shipslide = (event) => {
+    shipslide = (event) => {
         //so if already choosing for a ship dont choose others
         if (boxesclicked > 0) {
             return;
@@ -224,11 +244,10 @@ function startdeployementphase() {
     //event handler for clicking grid boxes during selection basically all the deployment logic required
     let startingdiv;
     let secondarydiv;
-    let direction = -1;
-    const boxhover = (event) => {
-        let index = parseInt(event.target.id);
-        let row = parseInt(index / 10);
-        let column = index % 10;
+    boxhover = (event) => {
+        // let index = parseInt(event.target.id);
+        // let row = parseInt(index / 10);
+        // let column = index % 10;
 
         if (count > 1 && shipchoice !== -1) {
 
@@ -258,6 +277,9 @@ function startdeployementphase() {
                 shipdiv.classList.remove("selected");
                 shipdiv.classList.toggle("remove");
                 shipchoice = -1;
+                if (mysidegraph.alldeployed()) {
+                    intermediaryphase();
+                }
 
             }
         }
@@ -273,9 +295,9 @@ function startdeployementphase() {
     }
 
     //as they are declared just now couldnt fetch them above :(
-    const allboxes = grid.querySelectorAll(".box");
+    allboxes = grid.querySelectorAll(".box");
 
-    document.addEventListener("contextmenu", (event) => {
+    resetship = (event) => {
         event.preventDefault();
         boxesclicked = 0;
 
@@ -286,13 +308,116 @@ function startdeployementphase() {
             if (node.classList.contains("selected") && !mysidegraph.isanyhit(row, column))
                 node.classList.toggle("selected");
         })
+    }
+
+    document.addEventListener("contextmenu", resetship);
+    document.addEventListener("contextmenu",(e)=>{
+        e.preventDefault();
     })
 
 }
 
 //end of deployment phase function
 
+//intermediaryphase
+function intermediaryphase() {
+    //removing interval
+     if (interval1) { // Check if an interval ID exists
+        clearInterval(interval1);
+     }
+    //adding a transition
+    parda = document.createElement("div");
+    parda.className = "curtain"
+    parda.style.height="100vh"
+    parda.style.width="100vw"
+    parda.style.backgroundColor = "#0a192f";
+    parda.style.position = "fixed";
+    parda.style.top="0px";
+    parda.style.left="0px";
+    parda.style.opacity = "0";
+    parda.style.zIndex = "3";
+    screen.appendChild(parda);
 
+    parda.classList.toggle("appear");
+
+    let count=0;
+    let interval2 = setInterval(()=>{
+      count++;
+      if(count===3){
+        clearInterval(interval2);
+        parda.remove();
+        battlephase();
+      }
+    },1000)
+
+
+
+}
+
+function battlephase() {
+    //removing eventlisteners
+    document.removeEventListener("contextmenu", resetship);
+    allboxes.forEach(box => {
+        box.removeEventListener("click", boxhover);
+    });
+    shipschildren.forEach(node => {
+        node.removeEventListener("click", shipslide);
+    })
+    //removing elements
+    shipcolumn.remove();
+    //parda.remove();
+    phasetype.textContent = "Battle Phase";
+
+    //transition
+    screen.classList.remove("appear");
+    slidingback.classList.remove("deploymentslider");
+    slidingback.style.animation = "none";
+    timer.style.display = "none";
+    set.style.display = "none";
+
+    //animations
+    phasetype.classList.remove("appear");
+    phasetype.style.setProperty("font-size", "20vh");
+    phasetype.style.display = "none";
+
+    let count = 0;
+    let interval3 = setInterval(() => {
+        if (count === 1) {
+            phasetype.style.display = "block";
+            phasetype.classList.add("appear");
+            screen.classList.add("appear");
+
+            //setting audio
+            const audio1 = new Audio("Resources/explosion.mp3");
+            audio1.volume = 0.3;
+            audio1.play();
+        }
+        else if(count === 2){
+            timer.style.display = "block";
+            text.textContent = "30";
+            set.style.display = "flex";
+
+        }
+        count++;
+
+
+    }, 1000)
+
+    //creating another grid for enemy ships
+    grid2 = document.createElement("div");
+    grid2.className = "grid";
+    
+    for (let i = 0; i < 100; i++) {
+        const div1 = document.createElement("div");
+        div1.className = "box";
+        div1.id = (i+100).toString();
+        grid2.appendChild(div1);
+        //div1.addEventListener("click", boxhover);
+    }
+
+    set.appendChild(grid2);
+    set.style.justifyContent = "space-around";
+}
 
 
 //calling all functions
