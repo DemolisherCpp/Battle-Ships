@@ -1,144 +1,4 @@
-//classes definition
-class ship {
-    hitpoints;
-    #name;
-    #alive;
-    startrow;
-    endrow;
-    startcolumn;
-    endcolumn;
-
-    constructor(string = "default name", hp = 2) {
-        this.#name = string;
-        this.hitpoints = hp;
-        this.#alive = true;
-        this.startrow = -1;
-        this.endrow = -1;
-        this.startcolumn = -1;
-        this.endcolumn = -1;
-    }
-
-    hit() {
-        if (this.hitpoints > 0) {
-            this.hitpoints--;
-        }
-    }
-
-    isdestroyed() {
-        if (this.hitpoints === 0) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    fieldoffire(row, column) {
-        if (this.startrow === -1 || this.startcolumn === -1 || this.endrow === -1 || this.endcolumn === -1) {
-            return false;
-        }
-        if (this.startrow === this.endrow && row === this.startrow && (column >= Math.min(this.startcolumn, this.endcolumn) && column <= Math.max(this.startcolumn, this.endcolumn))) {
-            return true;
-        }
-        else if (this.startcolumn === this.endcolumn && column === this.startcolumn && (row >= Math.min(this.startrow, this.endrow) && row <= Math.max(this.startrow, this.endrow))) {
-            return true;
-        }
-        return false;
-    }
-}
-
-class graph {
-    matrix;
-    ships;
-    constructor() {
-        this.matrix = [];
-        for (let i = 0; i < 10; i++) {
-            this.matrix[i] = new Array(10).fill(0);
-        }
-        this.ships = [];
-        this.ships[0] = new ship("Aircraft Carrier", 5)
-        this.ships[1] = new ship("Battle Ship", 4)
-        this.ships[2] = new ship("Cruiser", 3)
-        this.ships[3] = new ship("Submarine", 3)
-        this.ships[4] = new ship("Destroyer", 2)
-    }
-
-    lost() {
-        this.ships.forEach(shoop => {
-            if (!shoop.isdestroyed()) {
-                return false;
-            }
-        })
-        return true;
-    }
-
-    isanyhit(row, column) {
-        return this.ships.some(shoop => {
-            return shoop.fieldoffire(row, column);
-        });
-    }
-
-    checkhit(str) {
-        let index = parseInt(str);
-        let row = parseInt(index / 10);
-        let column = index % 10;
-    }
-
-}
-
-class friendlygraph extends graph {
-
-    constructor() {
-        super();
-    }
-
-    alldeployed() {
-        return this.ships.every(ship => ship.startrow !== -1);
-    }
-
-    markship(str, str2, shipnumber) {
-        let index = parseInt(str);
-        let index2 = parseInt(str2);
-        let row = parseInt(index / 10);
-        let column = index % 10;
-        let row2 = parseInt(index2 / 10);
-        let column2 = index2 % 10;
-
-        this.ships[shipnumber].startrow = row;
-        this.ships[shipnumber].endrow = row2;
-        this.ships[shipnumber].startcolumn = column;
-        this.ships[shipnumber].endcolumn = column2;
-    }
-}
-
-//helper function to find out if ship direction is satisfied
-function directionsatisfier(str, clicked, str2 = -1) {
-    let index = parseInt(str);
-    let row = parseInt(index / 10);
-    let column = index % 10;
-
-    let index2 = parseInt(clicked);
-    let clickedrow = parseInt(index2 / 10);
-    let clickedcolumn = index2 % 10;
-
-    if (str2 === -1 && ((row === clickedrow && (Math.abs(column - clickedcolumn) === 1)) || (column === clickedcolumn && (Math.abs(row - clickedrow) === 1)))) {
-        return true;
-    }
-
-    let index3 = parseInt(str2);
-    let secondrow = parseInt(index3 / 10);
-    let secondcolumn = index3 % 10;
-
-    if (str2 !== -1 && (row === secondrow && secondrow === clickedrow && (Math.abs(secondcolumn - clickedcolumn) === 1))) {
-        return true;
-    }
-
-    if (str2 !== -1 && (column === secondcolumn && secondcolumn === clickedcolumn && (Math.abs(secondrow - clickedrow) === 1))) {
-        return true;
-    }
-
-    return false;
-}
+import {friendlygraph,enemygraph,directionsatisfier} from "./Calculations.js"
 
 //getting elements from dom and declaring classes and making callback function variables
 const screen = document.querySelector("body")
@@ -153,6 +13,8 @@ const shipcolumn = document.querySelector(".shipbut");
 const shipschildren = shipcolumn.querySelectorAll(":scope > .ships");
 let allboxes;
 let parda;
+let playercurtain;
+let aicurtain;
 
 let boxhover;
 let shipslide;
@@ -161,6 +23,7 @@ let interval1;
 let grid2;
 
 const mysidegraph = new friendlygraph();
+const enemysidegraph = new enemygraph();
 
 //timer setup and page appearing steadily
 
@@ -379,7 +242,7 @@ function battlephase() {
     phasetype.classList.remove("appear");
     phasetype.style.setProperty("font-size", "20vh");
     phasetype.style.display = "none";
-
+    
     let count = 0;
     let interval3 = setInterval(() => {
         if (count === 1) {
@@ -417,6 +280,58 @@ function battlephase() {
 
     set.appendChild(grid2);
     set.style.justifyContent = "space-around";
+
+    //creating two curtain thingys to indicate player and ai turn
+    aicurtain = document.createElement("div");
+    aicurtain.className = "turncurtain";
+    aicurtain.style.right = "0%"
+
+    let text1 = document.createElement("div");
+    text1.className = "ct";
+    let innertext1 =  document.createElement("h2");
+    innertext1.innerText = "Algo's Turn";
+    text1.appendChild(innertext1);
+    aicurtain.appendChild(text1);
+
+    let image1 = document.createElement("img");
+    image1.className = "loadingsign";
+    image1.src = "Resources/loaderlorg.apng";
+    aicurtain.appendChild(image1);
+
+    playercurtain = document.createElement("div");
+    playercurtain.className = "turncurtain";
+
+    let text2 = document.createElement("div");
+    text2.className = "ct";
+    let innertext2 =  document.createElement("h2");
+    innertext2.innerText = "Player's Turn";
+    text2.appendChild(innertext2);
+    playercurtain.appendChild(text2);
+
+    let image2 = document.createElement("img");
+    image2.className = "loadingsign";
+    image2.src = "Resources/loaderlorg.apng";
+    playercurtain.appendChild(image2);
+    
+    screen.appendChild(playercurtain);
+    screen.appendChild(aicurtain);
+
+    playerturn();
+}
+
+function playerturn(){
+    let count = 0;
+    let interval4=setInterval(()=>{
+        if(count === 4){
+            playercurtain.classList.toggle("appear");
+            aicurtain.classList.toggle("appear");
+        }
+        else if(count === 8){
+            playercurtain.classList.toggle("appear");
+            aicurtain.classList.toggle("appear");
+        }
+        count++;
+    },1000);
 }
 
 

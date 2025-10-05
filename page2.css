@@ -215,3 +215,33 @@ body.appear{
 .set.appear{
     animation: displayer 1s ease-in forwards;
 }
+
+.turncurtain{
+    position: absolute;
+    background-color: #112240;
+    height: 76.5%;
+    width: 42.5%;
+    top : 16.5%;
+    right:100%;
+    transition: all 1s ease-in;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-content: center;
+}
+
+.turncurtain.appear{
+    transform: translate(100%,0);
+}
+
+.ct{
+    color:#e0e0e0;
+    font-size: 300%;
+    display: flex;
+    justify-content: center;
+    flex-basis: 100%;
+}
+
+.loadingsign{
+
+}
